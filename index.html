@@ -146,11 +146,72 @@ header{background:var(--surface);border-bottom:1px solid var(--border);padding:0
 const REDIRECT_URI = 'https://matheusqidegestor.github.io/lista-compras/';
 const CLIENT_ID = '4a392d27-733a-4f89-96ed-ac472c24bd89';
 const TENANT_ID = 'c4c511c9-9c33-4bd8-88a4-ec8288d7530f';
-const SCOPES = [
-  'https://analysis.windows.net/powerbi/api/Dataset.Read.All',
-  'https://analysis.windows.net/powerbi/api/Report.Read.All',
-  'https://analysis.windows.net/powerbi/api/Workspace.Read.All'
-];
+const SCOPES = ['https://analysis.windows.net/powerbi/api/Dataset.Read.All','https://analysis.windows.net/powerbi/api/Report.Read.All','https://analysis.windows.net/powerbi/api/Workspace.Read.All'];
+ 
+// IDs extraidos do Power BI
+const MODEL_ID = 7985667;
+const ARTIFACT_ID = 8567805;
+const EXPORT_URL = 'https://wabi-brazil-south-b-primary-redirect.analysis.windows.net/export/xlsx';
+ 
+const QUERY_PAYLOAD = {
+  "exportDataType": 2,
+  "executeSemanticQueryRequest": {
+    "version": "1.0.0",
+    "queries": [{
+      "Query": {
+        "Commands": [{
+          "SemanticQueryDataShapeCommand": {
+            "Query": {
+              "Version": 2,
+              "From": [
+                {"Name": "4", "Entity": "4_MedidaEstoque", "Type": 0},
+                {"Name": "p", "Entity": "Produto", "Type": 0},
+                {"Name": "i", "Entity": "ItensPedido", "Type": 0}
+              ],
+              "Select": [
+                {"Column": {"Expression": {"SourceRef": {"Source": "p"}}, "Property": "Produto"}, "Name": "Produto.Produto", "NativeReferenceName": "Produto"},
+                {"Measure": {"Expression": {"SourceRef": {"Source": "4"}}, "Property": "Estoque Qtd"}, "Name": "4_MedidaEstoque.Estoque Disponível (unid)", "NativeReferenceName": "Estoque"},
+                {"Column": {"Expression": {"SourceRef": {"Source": "i"}}, "Property": "Cod_Produto"}, "Name": "ItensPedido.Cod_Produto", "NativeReferenceName": "Cód"},
+                {"Measure": {"Expression": {"SourceRef": {"Source": "4"}}, "Property": "Qtd Sugerida Comprar"}, "Name": "4_MedidaEstoque.Qtd Sugerida Comprar", "NativeReferenceName": "Sugestão"},
+                {"Measure": {"Expression": {"SourceRef": {"Source": "4"}}, "Property": "Último Custo Comprado (unit)"}, "Name": "4_MedidaEstoque.Último Custo Comprado (unit)", "NativeReferenceName": "Último Custo"},
+                {"Measure": {"Expression": {"SourceRef": {"Source": "4"}}, "Property": "Dias de Cobertura"}, "Name": "4_MedidaEstoque.Dias de Cobertura", "NativeReferenceName": "Dias Restantes"},
+                {"Measure": {"Expression": {"SourceRef": {"Source": "4"}}, "Property": "Última Data de Compra"}, "Name": "4_MedidaEstoque.Última Data de Compra", "NativeReferenceName": "Última Data de Compra"},
+                {"Measure": {"Expression": {"SourceRef": {"Source": "4"}}, "Property": "Qtd Máxima Sugerida a Comprar"}, "Name": "4_MedidaEstoque.Qtd Máxima Sugerida a Comprar", "NativeReferenceName": "Max Sugestão"},
+                {"Column": {"Expression": {"SourceRef": {"Source": "p"}}, "Property": "Cód_Fabricante"}, "Name": "Produto.Cód_Fabricante", "NativeReferenceName": "Cód_Fabricante"}
+              ],
+              "Where": [
+                {"Condition": {"Not": {"Expression": {"Contains": {"Left": {"Measure": {"Expression": {"SourceRef": {"Source": "4"}}, "Property": "Ruptura"}}, "Right": {"Literal": {"Value": "'OK'"}}}}}},"Target": [{"Column": {"Expression": {"SourceRef": {"Source": "i"}}, "Property": "Cod_Produto"}},{"Column": {"Expression": {"SourceRef": {"Source": "p"}}, "Property": "Produto"}},{"Column": {"Expression": {"SourceRef": {"Source": "p"}}, "Property": "Cód_Fabricante"}}]},
+                {"Condition": {"In": {"Expressions": [{"Column": {"Expression": {"SourceRef": {"Source": "p"}}, "Property": "Status Estoque"}}], "Values": [[{"Literal": {"Value": "'Ruptura'"}}]]}}}
+              ],
+              "OrderBy": [{"Direction": 1, "Expression": {"Column": {"Expression": {"SourceRef": {"Source": "p"}}, "Property": "Produto"}}}]
+            },
+            "Binding": {"Primary": {"Groupings": [{"Projections": [0,1,2,3,4,5,6,7,8], "Subtotal": 1}]}, "DataReduction": {"Primary": {"Top": {"Count": 1000000}}, "Secondary": {"Top": {"Count": 100}}}, "Version": 1}
+          }
+        }, {
+          "ExportDataCommand": {
+            "Columns": [
+              {"QueryName": "Produto.Produto", "Name": "Produto"},
+              {"QueryName": "4_MedidaEstoque.Estoque Disponível (unid)", "Name": "Estoque"},
+              {"QueryName": "ItensPedido.Cod_Produto", "Name": "Cód"},
+              {"QueryName": "4_MedidaEstoque.Qtd Sugerida Comprar", "Name": "Sugestão"},
+              {"QueryName": "4_MedidaEstoque.Último Custo Comprado (unit)", "Name": "Último Custo"},
+              {"QueryName": "4_MedidaEstoque.Dias de Cobertura", "Name": "Dias Restantes"},
+              {"QueryName": "4_MedidaEstoque.Última Data de Compra", "Name": "Última Data de Compra"},
+              {"QueryName": "4_MedidaEstoque.Qtd Máxima Sugerida a Comprar", "Name": "Max Sugestão"},
+              {"QueryName": "Produto.Cód_Fabricante", "Name": "Cód_Fabricante"}
+            ],
+            "Ordering": [2,0,1,5,3,7,4,6,8],
+            "FiltersDescription": "Filtros aplicados:\nRuptura não contém 'OK'\nStatus Estoque é Ruptura"
+          }
+        }]
+      }
+    }],
+    "cancelQueries": [],
+    "modelId": MODEL_ID,
+    "userPreferredLocale": "pt-BR"
+  },
+  "artifactId": ARTIFACT_ID
+};
  
 let msalApp = null;
 let logLines = [], logVisible = false, fornMap = {};
@@ -158,53 +219,22 @@ let logLines = [], logVisible = false, fornMap = {};
 window.onload = async () => {
   parsearCSV(CSV_FIXO);
   log('ok', 'CSV: ' + Object.keys(fornMap).length + ' fornecedores');
- 
   try {
-    // MSAL 2.32 nao precisa de initialize()
     msalApp = new msal.PublicClientApplication({
-      auth: {
-        clientId: CLIENT_ID,
-        authority: 'https://login.microsoftonline.com/' + TENANT_ID,
-        redirectUri: REDIRECT_URI,
-        navigateToLoginRequestUrl: true
-      },
-      cache: {
-        cacheLocation: 'localStorage',
-        storeAuthStateInCookie: true
-      },
-      system: {
-        loggerOptions: {
-          logLevel: msal.LogLevel.Error,
-          loggerCallback: (level, message) => console.log(message)
-        }
-      }
+      auth: { clientId: CLIENT_ID, authority: 'https://login.microsoftonline.com/' + TENANT_ID, redirectUri: REDIRECT_URI, navigateToLoginRequestUrl: true },
+      cache: { cacheLocation: 'localStorage', storeAuthStateInCookie: true }
     });
- 
-    log('ok', 'MSAL criado');
- 
-    // Processar redirect
     const resp = await msalApp.handleRedirectPromise();
-    if (resp && resp.accessToken) {
-      setLoginOk(resp.account.username);
-      return;
-    }
- 
-    // Checar cache
+    if (resp && resp.accessToken) { setLoginOk(resp.account.username); return; }
     const accs = msalApp.getAllAccounts();
     if (accs.length > 0) {
-      try {
-        await msalApp.acquireTokenSilent({ scopes: SCOPES, account: accs[0] });
-        setLoginOk(accs[0].username);
-        return;
-      } catch(e) { /* token expirado, mostra botao */ }
+      try { await msalApp.acquireTokenSilent({ scopes: SCOPES, account: accs[0] }); setLoginOk(accs[0].username); return; } catch(e) {}
     }
- 
     document.getElementById('loginDot').className = 'status-dot';
     document.getElementById('loginText').textContent = 'Nao autenticado — clique em Entrar';
     log('ok', 'Pronto para login');
- 
   } catch(e) {
-    log('err', 'MSAL erro: ' + e.message);
+    log('err', 'MSAL: ' + e.message);
     document.getElementById('loginDot').className = 'status-dot error';
     document.getElementById('loginText').textContent = 'Erro: ' + e.message;
   }
@@ -217,33 +247,18 @@ function setLoginOk(email) {
   document.getElementById('btnLogout').style.display = 'inline-flex';
   log('ok', 'Login: ' + email);
 }
- 
 async function fazerLogin() {
   if (!msalApp) { log('err', 'MSAL nao pronto'); return; }
-  log('ok', 'Redirecionando para login...');
   document.getElementById('loginText').textContent = 'Redirecionando...';
-  try {
-    await msalApp.loginRedirect({ scopes: SCOPES, prompt: 'select_account' });
-  } catch(e) {
-    log('err', 'Erro login: ' + e.message);
-    document.getElementById('loginText').textContent = 'Erro: ' + e.message;
-  }
+  try { await msalApp.loginRedirect({ scopes: SCOPES, prompt: 'select_account' }); }
+  catch(e) { log('err', 'Login: ' + e.message); }
 }
- 
-async function fazerLogout() {
-  await msalApp.logoutRedirect({ postLogoutRedirectUri: REDIRECT_URI });
-}
- 
+async function fazerLogout() { await msalApp.logoutRedirect({ postLogoutRedirectUri: REDIRECT_URI }); }
 async function getToken() {
   const accs = msalApp.getAllAccounts();
   if (!accs.length) throw new Error('Faca login primeiro.');
-  try {
-    const r = await msalApp.acquireTokenSilent({ scopes: SCOPES, account: accs[0] });
-    return r.accessToken;
-  } catch(e) {
-    await msalApp.acquireTokenRedirect({ scopes: SCOPES, account: accs[0] });
-    throw new Error('Redirecionando para renovar token...');
-  }
+  try { const r = await msalApp.acquireTokenSilent({ scopes: SCOPES, account: accs[0] }); return r.accessToken; }
+  catch(e) { await msalApp.acquireTokenRedirect({ scopes: SCOPES, account: accs[0] }); throw new Error('Redirecionando...'); }
 }
  
 function parsearCSV(txt) {
@@ -277,22 +292,43 @@ function toggleLog() { logVisible = !logVisible; document.getElementById('logAre
 function setStatus(t, m) { document.getElementById('statusDot').className = 'status-dot ' + t; document.getElementById('statusText').textContent = m; }
 function setProgress(p) { const w = document.getElementById('progressWrap'); w.classList.add('visible'); document.getElementById('progressBar').style.width = p + '%'; if (p >= 100) setTimeout(() => w.classList.remove('visible'), 800); }
  
-async function apiFetch(tok, url) { const r = await fetch(url, { headers: { Authorization: 'Bearer ' + tok } }); if (!r.ok) throw new Error('API ' + r.status); return r.json(); }
-async function apiPost(tok, url, body) { const r = await fetch(url, { method: 'POST', headers: { Authorization: 'Bearer ' + tok, 'Content-Type': 'application/json' }, body: JSON.stringify(body) }); if (!r.ok) { const t = await r.text(); throw new Error('API ' + r.status + ': ' + t.substring(0, 200)); } return r.json(); }
-async function execDAX(tok, wsId, dsId, dax) {
-  const base = 'https://api.powerbi.com/v1.0/myorg';
-  const url = wsId === 'me' ? `${base}/datasets/${dsId}/executeQueries` : `${base}/groups/${wsId}/datasets/${dsId}/executeQueries`;
-  const d = await apiPost(tok, url, { queries: [{ query: dax }], serializerSettings: { includeNulls: true } });
-  return d.results?.[0]?.tables?.[0]?.rows || [];
+async function extrairDadosPowerBI(token) {
+  log('ok', 'Extraindo dados do visual Power BI...');
+  const resp = await fetch(EXPORT_URL, {
+    method: 'POST',
+    headers: {
+      'Authorization': 'Bearer ' + token,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(QUERY_PAYLOAD)
+  });
+  if (!resp.ok) {
+    const txt = await resp.text();
+    throw new Error('Erro ao exportar: ' + resp.status + ' — ' + txt.substring(0, 200));
+  }
+  // Retorna blob xlsx
+  const blob = await resp.blob();
+  log('ok', 'Dados recebidos: ' + (blob.size / 1024).toFixed(1) + ' KB');
+  return blob;
 }
-async function descobrirDataset(tok) {
-  const base = 'https://api.powerbi.com/v1.0/myorg';
-  const kws = ['produtor', 'shopping', 'compra', 'lista'];
-  function best(ds) { for (const d of ds) { if (kws.some(k => (d.name || '').toLowerCase().includes(k))) return d; } return ds[0] || null; }
-  try { const d = await apiFetch(tok, `${base}/datasets`); const b = best(d.value || []); if (b) { log('ok', 'Dataset: ' + b.name); return { wsId: 'me', dsId: b.id }; } } catch(e) { log('warn', 'me: ' + e.message); }
-  const gs = (await apiFetch(tok, `${base}/groups`)).value || [];
-  for (const g of gs) { try { const d = await apiFetch(tok, `${base}/groups/${g.id}/datasets`); const b = best(d.value || []); if (b) { log('ok', 'Dataset: ' + b.name); return { wsId: g.id, dsId: b.id }; } } catch(e) {} }
-  throw new Error('Nenhum dataset encontrado.');
+ 
+async function parseXLSX(blob) {
+  // Usa SheetJS via CDN para parsear o xlsx
+  return new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+    script.onload = async () => {
+      try {
+        const ab = await blob.arrayBuffer();
+        const wb = XLSX.read(ab, { type: 'array' });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const data = XLSX.utils.sheet_to_json(ws, { defval: null });
+        resolve(data);
+      } catch(e) { reject(e); }
+    };
+    script.onerror = () => reject(new Error('Falha ao carregar SheetJS'));
+    document.head.appendChild(script);
+  });
 }
  
 function identEmb(n) {
@@ -301,7 +337,7 @@ function identEmb(n) {
   if (/\b5\s?(L|LT|KG|K)\b/.test(n)) return { cls: 3 };
   if (/\b1\s?(KG|K)\b/.test(n) && !/\b(ML|G\b|GR\b)\b/.test(n)) return { cls: 1 };
   if (/\b\d+\s?(G\b|GR\b|ML\b)/.test(n) || /\b1\s?(L\b|LT\b)\b/.test(n)) return { cls: 2 };
-  const m = n.match(/(\d+)\s?KG/); if (m) { const q = parseInt(m[1]); if (q===1) return{cls:1}; if(q===5) return{cls:3}; if(q>5) return{cls:4}; }
+  const m = n.match(/(\d+)\s?KG/); if (m) { const q = parseInt(m[1]); if(q===1)return{cls:1}; if(q===5)return{cls:3}; if(q>5)return{cls:4}; }
   return { cls: 5 };
 }
 function calcQtd(sug, maxSug, emb) {
@@ -313,8 +349,6 @@ function calcQtd(sug, maxSug, emb) {
   if (emb.cls === 1) { const inf = Math.floor(s/10)*10; if (inf >= 1) return { qtd: inf }; }
   return { qtd: Math.ceil(s) };
 }
-function normKey(k) { return k.replace(/^[^[]*\[/, '').replace(/\]$/, '').trim(); }
-function normRow(r) { const o = {}; for (const [k, v] of Object.entries(r)) o[normKey(k)] = v; return o; }
  
 async function executar() {
   const ab = document.getElementById('alertBox'); ab.classList.remove('visible'); logLines = [];
@@ -324,24 +358,32 @@ async function executar() {
   try {
     setStatus('loading', 'Obtendo token...'); setProgress(10);
     const tok = await getToken(); log('ok', 'Token ok'); setProgress(20);
-    setStatus('loading', 'Descobrindo dataset...');
-    const { wsId, dsId } = await descobrirDataset(tok); setProgress(40);
-    setStatus('loading', 'Consultando Power BI...');
-    const rows = await execDAX(tok, wsId, dsId, `EVALUATE INFO.TABLES()`);
-    log('ok', rows.length + ' linhas'); setProgress(60);
-    if (!rows.length) throw new Error('Tabela vazia.');
-    const dedup = []; const seen = new Set();
-    rows.map(normRow).forEach(p => { const c = String(p['Cód']||p['Cod']||'').trim(); if (c && !seen.has(c)) { seen.add(c); dedup.push(p); } });
-    log('ok', dedup.length + ' produtos'); setProgress(75);
+ 
+    setStatus('loading', 'Extraindo dados do Power BI...');
+    const blob = await extrairDadosPowerBI(tok); setProgress(50);
+ 
+    setStatus('loading', 'Processando planilha...');
+    const rows = await parseXLSX(blob);
+    log('ok', rows.length + ' linhas extraidas'); setProgress(65);
+    if (!rows.length) throw new Error('Nenhum dado retornado.');
+ 
+    setStatus('loading', 'Classificando produtos...');
+    const seen = new Set();
+    const dedup = rows.filter(p => {
+      const c = String(p['Cód'] || p['Cod'] || '').trim();
+      if (!c || seen.has(c)) return false; seen.add(c); return true;
+    });
+    log('ok', dedup.length + ' produtos unicos'); setProgress(80);
+ 
     const geral = [], semFab = {}, rev = [];
     for (const p of dedup) {
-      const cod = String(p['Cód']||p['Cod']||'').trim();
-      const prod = String(p['Produto']||'').trim();
-      const sug = p['Sugestão']??p['Sugestao']??null;
-      const maxS = p['Max Sugestão']??p['Max Sugestao']??null;
-      const cFab = p['Cód_Fabricante']??p['Cod_Fabricante']??null;
+      const cod = String(p['Cód'] || p['Cod'] || '').trim();
+      const prod = String(p['Produto'] || '').trim();
+      const sug = p['Sugestão'] ?? p['Sugestao'] ?? null;
+      const maxS = p['Max Sugestão'] ?? p['Max Sugestao'] ?? null;
+      const cFab = p['Cód_Fabricante'] ?? p['Cod_Fabricante'] ?? null;
       const sv = Number(sug);
-      if (sug===null||isNaN(sv)||sv<1) { rev.push({cod,prod,cFab,motivo:'Sugestao < 1',acao:'Verificar estoque'}); continue; }
+      if (sug === null || isNaN(sv) || sv < 1) { rev.push({cod,prod,cFab,motivo:'Sugestao < 1',acao:'Verificar estoque'}); continue; }
       const emb = identEmb(prod); const { qtd } = calcQtd(sv, maxS, emb);
       if (!qtd) { rev.push({cod,prod,cFab,motivo:'Embalagem nao identificada',acao:'Classificar'}); continue; }
       if (prod.toUpperCase().startsWith('SEM.')) {
@@ -350,8 +392,8 @@ async function executar() {
         else { if(!semFab[fab]) semFab[fab]=[]; semFab[fab].push({prod,qtd}); }
       } else { geral.push({prod,qtd}); }
     }
-    log('ok', 'Geral:'+geral.length+' Sem:'+Object.keys(semFab).length+' Rev:'+rev.length);
-    setProgress(95); setStatus('ok', 'Concluido'); setProgress(100);
+    log('ok','Geral:'+geral.length+' Sem:'+Object.keys(semFab).length+' Rev:'+rev.length);
+    setProgress(95); setStatus('ok','Concluido — '+dedup.length+' produtos'); setProgress(100);
     renderRes(geral, semFab, rev, dedup.length);
   } catch(e) {
     setStatus('error', e.message); log('err', e.message);
@@ -366,7 +408,11 @@ function renderRes(geral, semFab, rev, total) {
   const msgG = geral.length ? `Bom dia! Segue nossa lista para cotacao:\n${geral.map(i=>`- ${i.prod} — ${i.qtd}`).join('\n')}\n\nPor favor, enviar preco e prazo. Obrigado.` : null;
   document.getElementById('tab-lista-geral').innerHTML = msgG ? `<div class="msg-block"><div class="msg-header"><span class="msg-tag geral">LISTA GERAL — ${geral.length} ITENS</span><button class="btn btn-copy" onclick="copiar(this,'mg')">Copiar</button></div><div class="msg-body" id="mg">${esc(msgG)}</div></div>` : `<div style="color:var(--text-dim);padding:20px;">Nenhum item.</div>`;
   let hs = nf===0 ? `<div style="color:var(--text-dim);padding:20px;">Nenhuma semente resolvida.</div>` : '';
-  for (const [fab,itens] of Object.entries(semFab)) { const msg=`Bom dia! Segue nossa solicitacao de cotacao dos itens de ${fab}:\n${itens.map(i=>`- ${i.prod} — ${i.qtd}`).join('\n')}\n\nPor favor, enviar preco e prazo. Obrigado.`; const id='ms_'+fab.replace(/[^a-zA-Z0-9]/g,'_'); hs+=`<div class="msg-block"><div class="msg-header"><span class="msg-tag semente">${esc(fab)} — ${itens.length} ITENS</span><button class="btn btn-copy" onclick="copiar(this,'${id}')">Copiar</button></div><div class="msg-body" id="${id}">${esc(msg)}</div></div>`; }
+  for (const [fab,itens] of Object.entries(semFab)) {
+    const msg = `Bom dia! Segue nossa solicitacao de cotacao dos itens de ${fab}:\n${itens.map(i=>`- ${i.prod} — ${i.qtd}`).join('\n')}\n\nPor favor, enviar preco e prazo. Obrigado.`;
+    const id = 'ms_'+fab.replace(/[^a-zA-Z0-9]/g,'_');
+    hs += `<div class="msg-block"><div class="msg-header"><span class="msg-tag semente">${esc(fab)} — ${itens.length} ITENS</span><button class="btn btn-copy" onclick="copiar(this,'${id}')">Copiar</button></div><div class="msg-body" id="${id}">${esc(msg)}</div></div>`;
+  }
   document.getElementById('tab-sementes').innerHTML = hs;
   document.getElementById('tab-revisao').innerHTML = rev.length===0 ? `<div style="color:var(--text-dim);padding:20px;">Nenhum item em revisao.</div>` : `<div class="msg-block"><div class="msg-header"><span class="msg-tag revisao">REVISAO — ${rev.length} ITENS</span></div><div style="overflow-x:auto"><table class="notes-table"><thead><tr><th>Cod</th><th>Produto</th><th>Cod Fab</th><th>Motivo</th><th>Acao</th></tr></thead><tbody>${rev.map(r=>`<tr><td>${esc(r.cod)}</td><td>${esc(r.prod)}</td><td>${esc(String(r.cFab??'N/A'))}</td><td><span class="motivo-tag">${esc(r.motivo)}</span></td><td style="color:var(--text-dim)">${esc(r.acao)}</td></tr>`).join('')}</tbody></table></div></div>`;
   document.getElementById('results').classList.add('visible');
