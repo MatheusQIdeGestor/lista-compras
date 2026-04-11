@@ -189,7 +189,14 @@ function setLoginOk(email) {
   document.getElementById('btnLogout').style.display='inline-flex';
   log('ok','Login: '+email);
 }
-async function fazerLogin() { await msalApp.loginRedirect({scopes:SCOPES, prompt:'select_account'}); }
+async function fazerLogin() {
+  if (!msalApp) { alert('Aguarde, sistema ainda carregando. Tente novamente em 2 segundos.'); return; }
+  try {
+    await msalApp.loginRedirect({scopes:SCOPES, prompt:'select_account'});
+  } catch(e) {
+    log('err', 'Erro login: ' + e.message);
+  }
+}
 async function fazerLogout() { await msalApp.logoutRedirect({postLogoutRedirectUri: REDIRECT_URI}); }
 async function getToken() {
   const accs=msalApp.getAllAccounts();
