@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shopping do Produtor — Lista de Compras</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@300;400;500;600;700&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"></script>
+<style>
+  :root{--bg:#0f0f0d;--surface:#1a1a16;--surface2:#222219;--border:#2e2e26;--cream:#f5f0e8;--cream-dim:#c8c0b0;--red:#c8302a;--red-dim:#8a1f1b;--gold:#c9a84c;--gold-dim:#7a6530;--green:#4a9e6b;--green-dim:#2d5f40;--text:#e8e4dc;--text-dim:#888070;--radius:4px;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif;min-height:100vh;overflow-x:hidden;}
+  header{background:var(--surface);border-bottom:1px solid var(--border);padding:0 40px;display:flex;align-items:center;justify-content:space-between;height:64px;position:sticky;top:0;z-index:100;}
+  .logo{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:3px;color:var(--cream);display:flex;align-items:center;gap:12px;}
+  .logo-dot{width:8px;height:8px;background:var(--red);border-radius:50%;}
+  .header-tag{font-family:'Barlow Condensed',sans-serif;font-size:11px;letter-spacing:2px;color:var(--text-dim);text-transform:uppercase;}
+  .container{max-width:1100px;margin:0 auto;padding:48px 40px;}
+  .step{margin-bottom:40px;}
+  .step-label{font-family:'Barlow Condensed',sans-serif;font-size:11px;letter-spacing:3px;color:var(--gold);text-transform:uppercase;margin-bottom:8px;}
+  .step-title{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:2px;color:var(--cream);margin-bottom:20px;}
+  .step-desc{font-family:'Barlow Condensed',sans-serif;color:var(--text-dim);font-size:14px;letter-spacing:1px;margin-bottom:20px;line-height:1.7;}
+  .btn{font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:600;letter-spacing:2px;text-transform:uppercase;padding:12px 28px;border-radius:var(--radius);border:none;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:8px;}
+  .btn-primary{background:var(--red);color:var(--cream);}
+  .btn-primary:hover{background:#e03830;}
+  .btn-primary:disabled{background:var(--red-dim);color:var(--text-dim);cursor:not-allowed;}
+  .btn-secondary{background:transparent;color:var(--gold);border:1px solid var(--gold-dim);}
+  .btn-secondary:hover{border-color:var(--gold);background:rgba(201,168,76,.05);}
+  .btn-ghost{background:transparent;color:var(--text-dim);border:1px solid var(--border);font-size:12px;padding:8px 16px;}
+  .btn-ghost:hover{color:var(--text);border-color:var(--text-dim);}
+  .btn-copy{background:var(--surface2);color:var(--green);border:1px solid var(--green-dim);font-size:12px;padding:8px 16px;}
+  .btn-copy:hover{background:rgba(74,158,107,.1);border-color:var(--green);}
+  .btn-copy.copied{color:var(--cream);border-color:var(--green);background:rgba(74,158,107,.2);}
+  .status-bar{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:14px 18px;display:flex;align-items:center;gap:12px;margin-bottom:20px;font-family:'Barlow Condensed',sans-serif;font-size:13px;letter-spacing:1px;color:var(--text-dim);}
+  .status-dot{width:8px;height:8px;border-radius:50%;background:var(--text-dim);flex-shrink:0;}
+  .status-dot.ok{background:var(--green);box-shadow:0 0 8px var(--green);}
+  .status-dot.error{background:var(--red);box-shadow:0 0 8px var(--red);}
+  .status-dot.loading{background:var(--gold);animation:pulse 1s infinite;}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+  .log-area{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:16px;font-family:'Barlow Condensed',sans-serif;font-size:12px;line-height:1.8;color:var(--text-dim);max-height:200px;overflow-y:auto;display:none;}
+  .log-area.visible{display:block;}
+  .log-ok{color:var(--green);}.log-warn{color:var(--gold);}.log-err{color:var(--red);}
+  .divider{border:none;border-top:1px solid var(--border);margin:40px 0;}
+  #results{display:none;}#results.visible{display:block;}
+  .stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:32px;}
+  .stat-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:16px;text-align:center;}
+  .stat-num{font-family:'Bebas Neue',sans-serif;font-size:36px;letter-spacing:1px;color:var(--cream);line-height:1;}
+  .stat-num.gold{color:var(--gold);}.stat-num.green{color:var(--green);}.stat-num.red{color:var(--red);}
+  .stat-label{font-family:'Barlow Condensed',sans-serif;font-size:11px;letter-spacing:2px;color:var(--text-dim);text-transform:uppercase;margin-top:4px;}
+  .msg-block{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:16px;overflow:hidden;}
+  .msg-header{background:var(--surface2);border-bottom:1px solid var(--border);padding:12px 18px;display:flex;align-items:center;justify-content:space-between;}
+  .msg-tag{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;}
+  .msg-tag.geral{color:var(--gold);}.msg-tag.semente{color:var(--green);}.msg-tag.revisao{color:var(--red);}
+  .msg-body{padding:18px;font-family:'Barlow',sans-serif;font-size:14px;line-height:1.9;color:var(--cream-dim);white-space:pre-wrap;word-break:break-word;}
+  .notes-table{width:100%;border-collapse:collapse;font-family:'Barlow Condensed',sans-serif;font-size:13px;}
+  .notes-table th{text-align:left;padding:8px 12px;font-size:10px;letter-spacing:2px;color:var(--text-dim);text-transform:uppercase;border-bottom:1px solid var(--border);}
+  .notes-table td{padding:10px 12px;border-bottom:1px solid var(--border);color:var(--cream-dim);vertical-align:top;}
+  .notes-table tr:last-child td{border-bottom:none;}
+  .motivo-tag{background:rgba(200,48,42,.15);color:var(--red);border:1px solid var(--red-dim);border-radius:2px;padding:2px 7px;font-size:10px;letter-spacing:1px;display:inline-block;}
+  .tabs{display:flex;gap:2px;margin-bottom:20px;border-bottom:1px solid var(--border);}
+  .tab{font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:600;letter-spacing:2px;text-transform:uppercase;padding:10px 20px;cursor:pointer;color:var(--text-dim);border-bottom:2px solid transparent;transition:all .2s;background:none;border-top:none;border-left:none;border-right:none;}
+  .tab.active{color:var(--cream);border-bottom-color:var(--red);}
+  .tab-panel{display:none;}.tab-panel.active{display:block;}
+  .alert{background:rgba(200,48,42,.1);border:1px solid var(--red-dim);border-radius:var(--radius);padding:12px 16px;font-family:'Barlow Condensed',sans-serif;font-size:13px;color:var(--red);margin-bottom:16px;display:none;}
+  .alert.visible{display:block;}
+  .progress-wrap{background:var(--border);border-radius:2px;height:2px;margin-top:8px;overflow:hidden;display:none;}
+  .progress-wrap.visible{display:block;}
+  .progress-bar{height:100%;background:var(--gold);width:0%;transition:width .4s ease;border-radius:2px;}
+  .actions-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+  .spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.2);border-top-color:var(--cream);border-radius:50%;animation:spin .7s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  ::-webkit-scrollbar{width:4px;}::-webkit-scrollbar-track{background:var(--surface);}::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+  .upload-area{background:var(--surface2);border:1px dashed var(--border);border-radius:var(--radius);padding:20px;text-align:center;cursor:pointer;transition:all .2s;margin-bottom:12px;}
+  .upload-area:hover{border-color:var(--gold);}
+  .upload-area.has-file{border-color:var(--green);border-style:solid;}
+  .upload-text{font-family:'Barlow Condensed',sans-serif;font-size:13px;color:var(--text-dim);letter-spacing:1px;}
+  .upload-text.success{color:var(--green);}
+  .info-box{background:rgba(201,168,76,.08);border:1px solid var(--gold-dim);border-radius:var(--radius);padding:14px 18px;font-family:'Barlow Condensed',sans-serif;font-size:13px;color:var(--gold);margin-bottom:20px;line-height:1.7;}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo"><div class="logo-dot"></div>SHOPPING DO PRODUTOR</div>
+  <span class="header-tag">Sistema de Lista de Compras</span>
+</header>
+
+<div class="container">
+
+  <div class="step">
+    <div class="step-label">Passo 1 de 3</div>
+    <div class="step-title">LOGIN MICROSOFT</div>
+    <div class="info-box">
+      Para funcionar corretamente, este sistema precisa ser acessado via servidor local.<br>
+      <strong>Como usar:</strong> Abra o Prompt de Comando na pasta do arquivo e execute:<br><br>
+      <code style="background:rgba(0,0,0,.3);padding:4px 10px;border-radius:3px;font-family:monospace;font-size:13px;">python -m http.server 3000</code><br><br>
+      Depois acesse no Chrome: <strong>http://localhost:3000/shopping_lista_compras.html</strong>
+    </div>
+    <div class="status-bar">
+      <div class="status-dot" id="loginDot"></div>
+      <span id="loginText">Verificando autenticacao...</span>
+    </div>
+    <button class="btn btn-secondary" id="btnLogin" onclick="fazerLogin()" style="display:none">&#9654; Entrar com conta Microsoft</button>
+    <div id="loginOkArea" style="display:none">
+      <button class="btn btn-ghost" onclick="fazerLogout()">Sair da conta</button>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <div class="step">
+    <div class="step-label">Passo 2 de 3</div>
+    <div class="step-title">ARQUIVO DE FORNECEDORES</div>
+    <div class="step-desc">O CSV padrao ja esta carregado. Faca upload apenas se tiver versao atualizada.</div>
+    <div id="uploadArea" class="upload-area has-file" onclick="document.getElementById('csvFile').click()">
+      <div class="upload-text success" id="uploadText">&#10003; fornecedores.csv padrao — 159 fornecedores carregados</div>
+    </div>
+    <input type="file" id="csvFile" accept=".csv" style="display:none" onchange="handleCSV(event)">
+  </div>
+
+  <hr class="divider">
+
+  <div class="step">
+    <div class="step-label">Passo 3 de 3</div>
+    <div class="step-title">GERAR LISTA</div>
+    <div id="alertBox" class="alert"></div>
+    <div class="status-bar">
+      <div class="status-dot" id="statusDot"></div>
+      <span id="statusText">Aguardando execucao</span>
+    </div>
+    <div class="progress-wrap" id="progressWrap"><div class="progress-bar" id="progressBar"></div></div>
+    <div class="log-area" id="logArea"></div>
+    <br>
+    <div class="actions-row">
+      <button class="btn btn-primary" id="btnExecutar" onclick="executar()">&#9654; Gerar Lista de Compras</button>
+      <button class="btn btn-ghost" onclick="toggleLog()">Ver Log</button>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <div id="results">
+    <div style="font-family:'Bebas Neue';font-size:32px;letter-spacing:3px;color:var(--cream);margin-bottom:32px;">RESULTADO DA EXTRACAO</div>
+    <div class="stats-row" id="statsRow"></div>
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('lista-geral')">Lista Geral</button>
+      <button class="tab" onclick="switchTab('sementes')">Sementes</button>
+      <button class="tab" onclick="switchTab('revisao')">Revisao</button>
+    </div>
+    <div id="tab-lista-geral" class="tab-panel active"></div>
+    <div id="tab-sementes" class="tab-panel"></div>
+    <div id="tab-revisao" class="tab-panel"></div>
+  </div>
+
+</div>
+
+<script>
+// =========================================================
+// CONFIGURAÇÃO — detecta se está em localhost ou file://
+// =========================================================
+const IS_LOCAL = location.protocol === 'file:';
+const REDIRECT_URI = IS_LOCAL
+  ? 'http://localhost:3000/shopping_lista_compras.html'
+  : location.href.split('?')[0].split('#')[0];
+
+const MSAL_CFG = {
+  auth: {
+    clientId: '4a392d27-733a-4f89-96ed-ac472c24bd89',
+    authority: 'https://login.microsoftonline.com/c4c511c9-9c33-4bd8-88a4-ec8288d7530f',
+    redirectUri: REDIRECT_URI
+  },
+  cache: { cacheLocation: 'localStorage', storeAuthStateInCookie: true }
+};
+
+const SCOPES = [
+  'https://analysis.windows.net/powerbi/api/Dataset.Read.All',
+  'https://analysis.windows.net/powerbi/api/Report.Read.All',
+  'https://analysis.windows.net/powerbi/api/Workspace.Read.All'
+];
+
+let msalApp = null;
+let logLines = [], logVisible = false, fornMap = {};
+
+// =========================================================
+// INIT
+// =========================================================
+window.onload = async () => {
+  parsearCSV(CSV_FIXO);
+  log('ok', 'CSV padrao carregado: ' + Object.keys(fornMap).length + ' fornecedores');
+
+  if (IS_LOCAL) {
+    document.getElementById('loginDot').className = 'status-dot error';
+    document.getElementById('loginText').textContent = 'Abra via localhost:3000 (ver instrucoes acima)';
+    return;
+  }
+
+  try {
+    msalApp = new msal.PublicClientApplication(MSAL_CFG);
+    await msalApp.initialize();
+
+    // Processar retorno do redirect de login
+    const resp = await msalApp.handleRedirectPromise();
+    if (resp?.accessToken) {
+      setLoginOk(resp.account.username);
+      return;
+    }
+
+    // Verificar conta já em cache
+    const accs = msalApp.getAllAccounts();
+    if (accs.length > 0) {
+      try {
+        await msalApp.acquireTokenSilent({ scopes: SCOPES, account: accs[0] });
+        setLoginOk(accs[0].username);
+      } catch(e) {
+        mostrarBtnLogin();
+      }
+    } else {
+      mostrarBtnLogin();
+    }
+  } catch(e) {
+    log('err', 'Erro MSAL: ' + e.message);
+    document.getElementById('loginDot').className = 'status-dot error';
+    document.getElementById('loginText').textContent = 'Erro ao inicializar autenticacao';
+  }
+};
+
+function mostrarBtnLogin() {
+  document.getElementById('loginDot').className = 'status-dot';
+  document.getElementById('loginText').textContent = 'Nao autenticado — clique em Entrar';
+  document.getElementById('btnLogin').style.display = 'inline-flex';
+}
+
+// =========================================================
+// LOGIN / LOGOUT
+// =========================================================
+async function fazerLogin() {
+  // Usa redirect — funciona sem popup
+  await msalApp.loginRedirect({ scopes: SCOPES, prompt: 'select_account' });
+}
+
+async function fazerLogout() {
+  await msalApp.logoutRedirect();
+}
+
+function setLoginOk(email) {
+  document.getElementById('loginDot').className = 'status-dot ok';
+  document.getElementById('loginText').textContent = 'Autenticado: ' + email;
+  document.getElementById('btnLogin').style.display = 'none';
+  document.getElementById('loginOkArea').style.display = 'block';
+  log('ok', 'Login: ' + email);
+}
+
+async function getToken() {
+  const accs = msalApp.getAllAccounts();
+  if (!accs.length) throw new Error('Faca login primeiro.');
+  try {
+    const r = await msalApp.acquireTokenSilent({ scopes: SCOPES, account: accs[0] });
+    return r.accessToken;
+  } catch(e) {
+    // Token expirado — redireciona para login
+    await msalApp.acquireTokenRedirect({ scopes: SCOPES, account: accs[0] });
+    throw new Error('Redirecionando para login...');
+  }
+}
+
+// =========================================================
+// CSV
+// =========================================================
+function parsearCSV(txt) {
+  fornMap = {};
+  const ls = txt.split('\n'); let hdr = true;
+  for (const l of ls) {
+    if (hdr) { hdr = false; continue; }
+    const t = l.trim(); if (!t) continue;
+    const i = t.indexOf(','); if (i < 0) continue;
+    const cod = normCod(t.substring(0, i));
+    const fab = t.substring(i + 1).trim();
+    if (cod && fab) fornMap[cod] = fab;
+  }
+}
+function normCod(c) { return String(c || '').trim().replace(/\s+/g, '').replace(/\.0+$/, ''); }
+function resolverFab(c) { return c != null ? fornMap[normCod(c)] || null : null; }
+function handleCSV(ev) {
+  const f = ev.target.files[0]; if (!f) return;
+  const r = new FileReader();
+  r.onload = e => {
+    parsearCSV(e.target.result);
+    document.getElementById('uploadArea').classList.add('has-file');
+    const ut = document.getElementById('uploadText');
+    ut.textContent = 'Carregado: ' + f.name + ' (' + Object.keys(fornMap).length + ' fornecedores)';
+    ut.classList.add('success');
+    log('ok', 'CSV atualizado: ' + f.name);
+  };
+  r.readAsText(f, 'UTF-8');
+}
+
+// =========================================================
+// LOG / STATUS
+// =========================================================
+function log(t, m) {
+  logLines.push({ t, m, ts: new Date().toLocaleTimeString('pt-BR') });
+  const el = document.getElementById('logArea');
+  el.innerHTML = logLines.map(l =>
+    `<div class="log-${l.t==='ok'?'ok':l.t==='warn'?'warn':'err'}">[${l.ts}] ${l.t==='ok'?'✓':l.t==='warn'?'⚠':'✗'} ${esc(l.m)}</div>`
+  ).join('');
+  el.scrollTop = el.scrollHeight;
+}
+function toggleLog() { logVisible = !logVisible; document.getElementById('logArea').classList.toggle('visible', logVisible); }
+function setStatus(t, m) { document.getElementById('statusDot').className = 'status-dot ' + t; document.getElementById('statusText').textContent = m; }
+function setProgress(p) {
+  const w = document.getElementById('progressWrap'); w.classList.add('visible');
+  document.getElementById('progressBar').style.width = p + '%';
+  if (p >= 100) setTimeout(() => w.classList.remove('visible'), 800);
+}
+
+// =========================================================
+// POWER BI API
+// =========================================================
+async function apiFetch(tok, url) {
+  const r = await fetch(url, { headers: { Authorization: 'Bearer ' + tok } });
+  if (!r.ok) throw new Error('API ' + r.status + ': ' + url.split('/').pop());
+  return r.json();
+}
+async function apiPost(tok, url, body) {
+  const r = await fetch(url, { method: 'POST', headers: { Authorization: 'Bearer ' + tok, 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  if (!r.ok) { const t = await r.text(); throw new Error('API ' + r.status + ': ' + t.substring(0, 200)); }
+  return r.json();
+}
+async function execDAX(tok, wsId, dsId, dax) {
+  const base = 'https://api.powerbi.com/v1.0/myorg';
+  const url = wsId === 'me' ? `${base}/datasets/${dsId}/executeQueries` : `${base}/groups/${wsId}/datasets/${dsId}/executeQueries`;
+  const d = await apiPost(tok, url, { queries: [{ query: dax }], serializerSettings: { includeNulls: true } });
+  return d.results?.[0]?.tables?.[0]?.rows || [];
+}
+async function descobrirDataset(tok) {
+  const base = 'https://api.powerbi.com/v1.0/myorg';
+  const kws = ['produtor', 'shopping', 'compra', 'lista'];
+  function best(ds) { for (const d of ds) { if (kws.some(k => (d.name || '').toLowerCase().includes(k))) return d; } return ds[0] || null; }
+  try {
+    const d = await apiFetch(tok, `${base}/datasets`);
+    const b = best(d.value || []);
+    if (b) { log('ok', 'Dataset: ' + b.name + ' (workspace: me)'); return { wsId: 'me', dsId: b.id, nome: b.name }; }
+  } catch(e) { log('warn', 'Workspace me: ' + e.message); }
+  const gs = (await apiFetch(tok, `${base}/groups`)).value || [];
+  log('ok', gs.length + ' workspaces encontrados');
+  for (const g of gs) {
+    try {
+      const d = await apiFetch(tok, `${base}/groups/${g.id}/datasets`);
+      const b = best(d.value || []);
+      if (b) { log('ok', 'Dataset: ' + b.name + ' (' + g.name + ')'); return { wsId: g.id, dsId: b.id, nome: b.name }; }
+    } catch(e) {}
+  }
+  throw new Error('Nenhum dataset encontrado. Verifique permissoes do Power BI.');
+}
+
+// =========================================================
+// EMBALAGEM / QUANTIDADE
+// =========================================================
+function identEmb(nome) {
+  if (!nome) return { cls: 5, desc: 'N/A' };
+  const n = nome.toUpperCase();
+  if (/\b(10\s?L|15\s?L|20\s?L|25\s?L|25\s?KG|30\s?L|50\s?L|50\s?KG|100\s?L|20\s?KG|30\s?KG|40\s?KG)\b/.test(n)) return { cls: 4, desc: '>5L/5KG' };
+  if (/\b5\s?(L|LT|LITRO|KG|K)\b/.test(n)) return { cls: 3, desc: '5L/5KG' };
+  if (/\b1\s?(KG|K)\b/.test(n) && !/\b(ML|G\b|GR\b)\b/.test(n)) return { cls: 1, desc: '1KG' };
+  if (/\b\d+\s?(G\b|GR\b|ML\b)/.test(n) || /\b1\s?(L\b|LT\b|LITRO)\b/.test(n)) return { cls: 2, desc: 'g/ml/1L' };
+  const m = n.match(/(\d+)\s?KG/);
+  if (m) { const q = parseInt(m[1]); if (q === 1) return { cls: 1, desc: '1KG' }; if (q === 5) return { cls: 3, desc: '5KG' }; if (q > 5) return { cls: 4, desc: q + 'KG' }; }
+  return { cls: 5, desc: 'N/A' };
+}
+function calcQtd(sug, maxSug, emb) {
+  const s = Number(sug) || 0;
+  if (s < 1) return { qtd: null, obs: 'Sugestao < 1' };
+  const mx = Number(maxSug) >= s ? Number(maxSug) : s;
+  const mult = emb.cls === 1 ? 10 : emb.cls === 2 ? 12 : emb.cls === 3 ? 4 : null;
+  if (!mult) return { qtd: Math.ceil(s), obs: '' };
+  for (let m = mult; m <= mx + mult; m += mult) { if (m >= s && m <= mx) return { qtd: m, obs: '' }; }
+  if (emb.cls === 1) { const inf = Math.floor(s / 10) * 10; if (inf >= 1) return { qtd: inf, obs: 'Sem multiplo no range' }; }
+  return { qtd: Math.ceil(s), obs: '' };
+}
+function normKey(k) { return k.replace(/^[^[]*\[/, '').replace(/\]$/, '').trim(); }
+function normRow(r) { const o = {}; for (const [k, v] of Object.entries(r)) o[normKey(k)] = v; return o; }
+
+// =========================================================
+// PIPELINE
+// =========================================================
+async function executar() {
+  const ab = document.getElementById('alertBox'); ab.classList.remove('visible');
+  logLines = [];
+
+  if (IS_LOCAL) {
+    ab.textContent = 'Use http://localhost:3000 (ver instrucoes no Passo 1).';
+    ab.classList.add('visible'); return;
+  }
+
+  if (!msalApp || !msalApp.getAllAccounts().length) {
+    ab.textContent = 'Faca login primeiro (Passo 1).';
+    ab.classList.add('visible'); return;
+  }
+
+  const btn = document.getElementById('btnExecutar');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Processando...';
+  document.getElementById('results').classList.remove('visible');
+
+  try {
+    setStatus('loading', 'Obtendo token...'); setProgress(10);
+    const tok = await getToken();
+    log('ok', 'Token obtido'); setProgress(20);
+
+    setStatus('loading', 'Descobrindo dataset...');
+    const { wsId, dsId, nome } = await descobrirDataset(tok);
+    log('ok', 'Dataset: ' + nome); setProgress(40);
+
+    setStatus('loading', 'Consultando tabela "Produtos a Comprar"...');
+    const rows = await execDAX(tok, wsId, dsId, `EVALUATE 'Produtos a Comprar' ORDER BY 'Produtos a Comprar'[Cód] ASC`);
+    log('ok', rows.length + ' linhas extraidas'); setProgress(60);
+    if (!rows.length) throw new Error('Tabela retornou 0 linhas. Verifique o nome da tabela no Power BI.');
+
+    setStatus('loading', 'Classificando produtos...');
+    const prods = rows.map(normRow);
+    const seen = new Set();
+    const dedup = prods.filter(p => { const c = String(p['Cód'] || p['Cod'] || '').trim(); if (!c || seen.has(c)) return false; seen.add(c); return true; });
+    log('ok', dedup.length + ' produtos apos deduplicacao'); setProgress(75);
+
+    const geral = [], semFab = {}, rev = [];
+    for (const p of dedup) {
+      const cod = String(p['Cód'] || p['Cod'] || '').trim();
+      const prod = String(p['Produto'] || '').trim();
+      const sug = p['Sugestão'] ?? p['Sugestao'] ?? null;
+      const maxS = p['Max Sugestão'] ?? p['Max Sugestao'] ?? null;
+      const cFab = p['Cód_Fabricante'] ?? p['Cod_Fabricante'] ?? null;
+      const sv = Number(sug);
+      if (sug === null || isNaN(sv) || sv < 1) { rev.push({ cod, prod, cFab, motivo: 'Sugestao < 1 ou ausente', acao: 'Verificar estoque' }); continue; }
+      const emb = identEmb(prod);
+      const { qtd, obs } = calcQtd(sv, maxS, emb);
+      if (qtd === null) { rev.push({ cod, prod, cFab, motivo: obs || 'Embalagem nao identificada', acao: 'Classificar manualmente' }); continue; }
+      if (prod.toUpperCase().startsWith('SEM.')) {
+        const fab = resolverFab(cFab);
+        if (!fab) { rev.push({ cod, prod, cFab: cFab ?? 'N/A', motivo: 'Fabricante nao resolvido no CSV', acao: 'Verificar codigo' }); }
+        else { if (!semFab[fab]) semFab[fab] = []; semFab[fab].push({ cod, prod, qtd }); }
+      } else {
+        geral.push({ cod, prod, qtd });
+      }
+    }
+    log('ok', 'Geral: ' + geral.length + ' | Sementes: ' + Object.keys(semFab).length + ' fab | Revisao: ' + rev.length);
+    setProgress(95); setStatus('ok', 'Concluido — ' + dedup.length + ' produtos processados'); setProgress(100);
+    renderRes(geral, semFab, rev, dedup.length);
+  } catch(e) {
+    setStatus('error', e.message); log('err', e.message);
+    document.getElementById('alertBox').textContent = e.message;
+    document.getElementById('alertBox').classList.add('visible');
+    document.getElementById('logArea').classList.add('visible'); logVisible = true;
+  } finally {
+    btn.disabled = false; btn.innerHTML = '&#9654; Gerar Lista de Compras';
+  }
+}
+
+// =========================================================
+// RENDER
+// =========================================================
+function renderRes(geral, semFab, rev, total) {
+  const nf = Object.keys(semFab).length;
+  document.getElementById('statsRow').innerHTML = `
+    <div class="stat-card"><div class="stat-num">${total}</div><div class="stat-label">Total Extraido</div></div>
+    <div class="stat-card"><div class="stat-num gold">${geral.length}</div><div class="stat-label">Lista Geral</div></div>
+    <div class="stat-card"><div class="stat-num green">${nf}</div><div class="stat-label">Grupos Sementes</div></div>
+    <div class="stat-card"><div class="stat-num red">${rev.length}</div><div class="stat-label">Em Revisao</div></div>`;
+
+  const msgG = geral.length ? `Bom dia! Segue nossa lista para cotacao:\n${geral.map(i => `- ${i.prod} — ${i.qtd}`).join('\n')}\n\nPor favor, enviar preco e prazo. Obrigado.` : null;
+  document.getElementById('tab-lista-geral').innerHTML = msgG
+    ? `<div class="msg-block"><div class="msg-header"><span class="msg-tag geral">LISTA GERAL — ${geral.length} ITENS</span><button class="btn btn-copy" onclick="copiar(this,'mg')">Copiar</button></div><div class="msg-body" id="mg">${esc(msgG)}</div></div>`
+    : `<div style="color:var(--text-dim);font-family:'Barlow Condensed';padding:20px;">Nenhum item para lista geral.</div>`;
+
+  let hs = nf === 0 ? `<div style="color:var(--text-dim);font-family:'Barlow Condensed';padding:20px;">Nenhuma semente com fabricante resolvido.</div>` : '';
+  for (const [fab, itens] of Object.entries(semFab)) {
+    const msg = `Bom dia! Segue nossa solicitacao de cotacao dos itens de ${fab}:\n${itens.map(i => `- ${i.prod} — ${i.qtd}`).join('\n')}\n\nPor favor, enviar preco e prazo. Obrigado.`;
+    const id = 'ms_' + fab.replace(/[^a-zA-Z0-9]/g, '_');
+    hs += `<div class="msg-block"><div class="msg-header"><span class="msg-tag semente">${esc(fab)} — ${itens.length} ITENS</span><button class="btn btn-copy" onclick="copiar(this,'${id}')">Copiar</button></div><div class="msg-body" id="${id}">${esc(msg)}</div></div>`;
+  }
+  document.getElementById('tab-sementes').innerHTML = hs;
+
+  document.getElementById('tab-revisao').innerHTML = rev.length === 0
+    ? `<div style="color:var(--text-dim);font-family:'Barlow Condensed';padding:20px;">Nenhum item em revisao.</div>`
+    : `<div class="msg-block"><div class="msg-header"><span class="msg-tag revisao">REVISAO — ${rev.length} ITENS</span></div><div style="overflow-x:auto"><table class="notes-table"><thead><tr><th>Cod</th><th>Produto</th><th>Cod Fab.</th><th>Motivo</th><th>Acao</th></tr></thead><tbody>${rev.map(r => `<tr><td>${esc(r.cod)}</td><td>${esc(r.prod)}</td><td>${esc(String(r.cFab ?? 'N/A'))}</td><td><span class="motivo-tag">${esc(r.motivo)}</span></td><td style="color:var(--text-dim)">${esc(r.acao)}</td></tr>`).join('')}</tbody></table></div></div>`;
+
+  document.getElementById('results').classList.add('visible');
+  document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+}
+
+function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+function copiar(btn, id) {
+  const el = document.getElementById(id); if (!el) return;
+  navigator.clipboard.writeText(el.textContent).then(() => { btn.textContent = 'Copiado!'; btn.classList.add('copied'); setTimeout(() => { btn.textContent = 'Copiar'; btn.classList.remove('copied'); }, 2000); });
+}
+function switchTab(n) {
+  document.querySelectorAll('.tab').forEach((t, i) => t.classList.toggle('active', ['lista-geral', 'sementes', 'revisao'][i] === n));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'tab-' + n));
+}
+
+// =========================================================
+// CSV EMBUTIDO
+// =========================================================
+const CSV_FIXO = `Cod_Fabricante,Fabricante
+1,GERAL
+2,AGENER UNIAO
+3,AGRICUR
+4,AGRIPEC
+5,AGROCERES
+6,ARYSTA
+7,ARYSTA
+8,BASF
+9,RIJK ZWAAN
+10,BAYER
+11,BERNAR
+12,BRASIL EMBALAGENS
+13,CEPELMA
+14,CLAUSE
+15,CROSLIN
+16,DOW
+17,DU PONT
+18,EUCATEX
+19,FELTRIN
+20,FENIX
+21,FERTIPAR
+22,FMC QUIMICA
+23,GERDAU
+24,GUARANY
+25,HORTICERES
+26,HORTEC
+27,IHARABRAS
+28,INSETISEED
+29,JARAGUA
+30,KELLDRIN
+31,MATIELLI
+32,MAXILONA
+33,MILENIA
+34,MONSANTO
+35,MULT FERTIL
+36,MULTITECNICA
+37,NORTENE
+38,OXIQUIMICA
+39,PFIZER
+40,PLUSS SEEDS
+41,RM ISOTERMICA
+42,CORTEVA
+43,SAKAMA
+44,SAKATA
+45,SAO ROQUE
+46,SEMEART
+47,SEMENTES FARIA
+48,SEMINIS
+49,SIPCAM
+50,FORTH
+51,SOLPACK
+52,SANTA HELENA
+53,SUMITHOMO
+54,SYNGENTA
+55,TAKII
+56,TECNOSEED
+57,TOPSEED
+58,VILMORIN
+59,NOVA PLAST
+60,AGROSALLES
+61,NORTOX
+62,ATTA-KILL
+63,MANAH - BUNGE
+64,TECNOCELL
+65,FLORAL ATLANTA
+66,SINON DO BRASIL LTDA
+67,YARA
+68,DEFENSIVE
+69,BEQUISA
+70,NAANDAN JAIN
+71,AJINOMOTO
+72,AGRICHEM
+73,CITROMAX
+74,NUNHEMS DO BRASIL
+75,NEOPLASTIC
+76,CHEMINOVA
+77,THR IND. E COM. EMBALAGENS LTDA
+78,MANARI
+79,SERQUAMICO LTDA
+80,CHR HANSEN
+81,AGRIVALLE
+82,BIOMIX
+83,BIOPLANT
+84,NUFARM
+85,SPUMAPAC
+86,BIOMATRIX
+87,BALLAGRO
+88,ADHERFLEX
+89,TECHNES AGRICOLA LTDA
+90,DIOXIDE INDUSTRIA QUIMICA LTDA
+91,ITAMIL PLASTICOS LTDA - EPP
+92,ISOPORLEV COMERCIO E INDUSTRIA LTDA
+93,ADUBOS MARISA
+94,DURO PLASTICOS LTDA
+95,CAROLINA SOIL DO BRASIL LTDA
+96,PASTOBRAS SEMENTES LTDA
+97,ISLA SEMENTES LTDA
+98,EAGLE COMERCIO DE SEMENTES LTDA
+99,AGRIVALLE BRASIL
+100,JOHN DEERE WATER
+101,COMMAGRO IMPORTACAO E COMERCIO LTDA
+102,FIAT
+103,ARBI IND. QUIMICAS E BIOLOGICAS LTD
+104,SIPLAST TAPE
+105,SQM VITAS AGROINDUSTRIA
+106,MINERACAO CURIMBABA LTDA. E.BAUXITA
+107,SHOPPING DAS MUDAS
+108,IRRIGAPLAS COMERCIO E REPR. LTDA
+109,BRENTAG QUIMICA BRASIL LTDA
+110,HAZERA DO BRASIL
+111,LUXEMBOURG BRASIL COM. PROD. QUIMIC
+112,IAP
+113,ORO AGRI BRASIL
+114,FERCAM
+115,IRRITEC DO BRASIL IND COM EQUIP
+116,BIOGROW BRASIL LTDA
+117,SANTA CLARA AGROCIENCIA IND. LTDA
+118,AGROVANT
+119,LANZI FERTILIZANTES
+120,UPL
+121,AGROCINCO
+122,OURO FINO AGROCIENCIA
+123,FOSPLANTE IND. E COM. LTDA
+124,STOCKTON AGRIMOR DO BRASIL LTDA
+125,AGRINOBRE
+126,PINDSTRUP
+127,MECPLANT
+128,FOSPLANTE LTDA
+129,PACK IND. E COM. DE PROD. AGROP. LT
+130,BIOLCHIM DO BRASIL IMP. COM. LTDA
+131,BRA DEFENSIVOS AGRICOLAS LTDA
+132,GOTA LTDA
+133,UNOCANN TUBOS E CONEXOES LTDA
+134,TECELAGEM ROMA LTDA
+135,ADAMA
+136,ALBAUGH
+137,LUXEMBOURG BRASIL
+138,GOWAN
+139,DRIPSOL
+140,BEQUISA
+141,VITTIA FERTILIZANTES E BIOLOGICOS L
+142,MULTIFOS FERTILIZANTES LTDA
+143,ROTAM DO BRASIL AGROQUIMICA
+144,NICHINO DO BRASIL
+145,RAWELL
+146,MINGOTI
+147,AGRO BIOTECH
+148,GINEGAR
+149,PRENTISS
+150,SEMENTES DATERRA
+151,MIREX
+152,EAST
+153,CURYOM
+154,AGRO SHOP
+155,WILLOWOOD
+156,KOPPERT
+157,REDFERTIL
+158,CCAB
+159,RAINBOW DEFENSIVOS`;
+</script>
+</body>
+</html>
