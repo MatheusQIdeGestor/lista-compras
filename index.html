@@ -327,7 +327,7 @@ async function executar() {
     setStatus('loading', 'Descobrindo dataset...');
     const { wsId, dsId } = await descobrirDataset(tok); setProgress(40);
     setStatus('loading', 'Consultando Power BI...');
-    const rows = await execDAX(tok, wsId, dsId, `EVALUATE 'Produtos a comprar' ORDER BY 'Produtos a comprar'[Cód] ASC`);
+    const rows = await execDAX(tok, wsId, dsId, `EVALUATE INFO.TABLES()`);
     log('ok', rows.length + ' linhas'); setProgress(60);
     if (!rows.length) throw new Error('Tabela vazia.');
     const dedup = []; const seen = new Set();
